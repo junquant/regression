@@ -1,0 +1,165 @@
+---
+title: "Differences in Miles per Gallon for Automatic and Manual Transmissions"
+output:
+  pdf_document: default
+  html_document:
+    keep_md: yes
+---
+
+### **EXECUTIVE SUMMARY**
+This document explores the relationship between different variables and miles per gallon (mpg) with a focus on the difference on mpg for manual and automatic transmissions. Using statistical analysis and domain research into the factors contributing to fuel efficiency (mpg), it was found that the relationship between mpg and transmission is not significant.  The final model constructed consists of the independent variables weight (wt) and cylinders (cyl). Residuals were plotted to check for the key assumptions of a linear model. 
+
+### **EXPLORATORY DATA ANALYSIS**
+From visual inspection of the box plot, it seems that Manual leads to a higher fuel efficiency. However, we would need to further investigate the relationship between the various variables, transmission and mpg to arrive at a conclusion. We also see that Displacement (disp), Horsepower (hp), Weight (wt) and Cylinder (cyl) are negatively correlated to mpg whereas Rear Axle Ratio (drat), Engine (vs) and Transmission (am) is somewhat positively correlated to mpg from the Correlation plot. The correlation matrix can be found in the appendix. 
+```{r, echo=FALSE, fig.width=8, fig.height=3, fig.align='center'}
+library(ggplot2)
+library(scales)
+library(reshape2)
+library(grid)
+library(gridExtra)
+
+#Loading and formatting the data
+data(mtcars)
+corPlotCars<-mtcars
+mtcars$am <- as.factor(mtcars$am)
+mtcars$vs <- as.factor(mtcars$vs)
+
+boxplot <- ggplot(data=mtcars, aes(x=am, y=mpg, fill=am)) + 
+        geom_boxplot() + 
+        scale_fill_manual("Legend", values=c("#CC6666","#56B4E9"),
+                          labels=c("0-Automatic","1-Manual")) +
+        xlab("Transmission") +
+        ylab("Miles per Gallon") +
+        theme(legend.position = c(.15,.80), 
+              plot.title=element_text(face="bold",size=8),
+              axis.title=element_text(face="bold",size=8),
+              axis.text=element_text(face="bold",size=8),
+              legend.title=element_text(size=7),
+              legend.text=element_text(size=7),
+              legend.background=element_rect(fill="white")) +
+        ggtitle("Box Plot of Miles per Gallon by Transmission")
+        
+corPlotData <- round(cor(corPlotCars),2)
+corPlotData[upper.tri(corPlotData)]<-NA
+corPlotData<-na.omit(melt(corPlotData))
+
+corPlot <- ggplot(data=corPlotData, aes(Var1,Var2, fill=value)) +
+        geom_tile(color = "white") + 
+        scale_fill_gradient2(low="#CC6666", high="steelblue", mid="white",
+                             midpoint = 0, limit=c(-1,1), 
+                             name="Correlation") +
+        theme(legend.position = c(.12,.65), 
+              plot.title=element_text(face="bold",size=8),
+              axis.title=element_blank(),
+              axis.text=element_text(face="bold",size=8),
+              legend.title=element_text(size=7),
+              legend.text=element_text(size=7),
+              legend.background=element_rect(fill=alpha("white",0.4))) +
+        ggtitle("Correlation Plot of mtcars Dataset")
+
+allplot <- grid.arrange(boxplot,corPlot, ncol=2)
+
+```
+
+### **MODEL SELECTION**
+The strategy to model selection would be to consider the correlation between the different variables as well as researching into what may impact mpg and make use of the domain knowledge gained from the research. 
+
+**Model 1** - Model 1 will consists of the variables listed below. At 0.05 significance level, only hp and wt are significant. Refer to the appendix (Figure 2) for the individual p values. 
+```{r, echo=TRUE, results="hide"}
+model1 <- lm(mpg ~ disp + hp + wt + cyl + drat + vs + am, data=mtcars)
+```
+
+**Model 2** - By research automobiles terms [(link)](http://www.vroomgirls.com/what-the-numbers-mean/), we note that cyl and disp are important factors contributing to mpg. In addition, wt is also related [(link)](http://www.driverside.com/auto-library/top_10_factors_contributing_to_fuel_economy-317) to fuel econony (mpg). There was no mention about hp being directly related in both links. Hence, we will remove hp in our second model. To avoid multicollinearity [(link)](https://en.wikipedia.org/wiki/Multicollinearity) in the model, we will use cyl in the model. am is included to explore the relationship of am to mpg. As such, model 2 consist of the below variables. We note that at significance level 0.05, am1 is not significant to the model. Refer to the appendix (Figure 3) for the individual p values. 
+```{r, echo=TRUE, results="hide"}
+model2 <- lm(mpg ~ wt + cyl + am, data=mtcars)
+```
+
+**Model 3** - Further research indicates that am may not be directly related to fuel economy [(link)](http://www.edmunds.com/fuel-economy/five-myths-about-stick-shifts.html). Hence, we will remove am and construct model 3. Refer to the appendix (Figure 4) for the individual p values. 
+
+```{r, echo=TRUE, results="hide"}
+model3<- lm(mpg ~ wt + cyl, data=mtcars)
+```
+
+**Model Comparison** - The Adjusted R Squared is used as a basis for model comparison, the final model selected is the third model with the highest Adjusted R Squared [(link)](http://blog.minitab.com/blog/adventures-in-statistics/multiple-regession-analysis-use-adjusted-r-squared-and-predicted-r-squared-to-include-the-correct-number-of-variables) of 0.8185. This indicates that 81.85% of the variance in mpg is explained by the model.
+```{r, echo=FALSE}
+adjrsquared<-c(summary(model1)$adj.r.squared,summary(model2)$adj.r.squared,summary(model3)$adj.r.squared)
+names(adjrsquared) <- c("Model 1","Model 2","Model 3")
+round(adjrsquared,4)
+```
+
+### **RESIDUALS AND DIAGNOSTICS**
+Here, we perform a residual plot and some diagnostics on the linear model (model3) to see if assumptions of a linear regression are violated. The residuals plot shows a random pattern. Hence, a linear model is appropriate for the data. The Normal Q-Q plot indicates that standardized residuals are approximately normal. The assumption of normal errors is also not violated. Refer to the appendix (Figure 5) for additional diagnostics plots.
+
+```{r, echo=FALSE, fig.width=8, fig.height=3}
+plot1 <- ggplot(model3, aes(.fitted, .resid)) + 
+        geom_point() +
+        stat_smooth(method="loess") + 
+        geom_hline(yintercept=0, col="red", linetype="dashed") +
+        xlab("Fitted values")+ylab("Residuals") +
+        ggtitle("Residual vs Fitted Plot")+
+        theme(legend.position = c(.15,.80), 
+              plot.title=element_text(face="bold",size=8),
+              axis.title=element_text(face="bold",size=8),
+              axis.text=element_text(face="bold",size=8))
+
+plot2 <- ggplot(model3, aes(qqnorm(.stdresid)[[1]], .stdresid)) +
+        geom_point(na.rm = TRUE) + 
+        geom_abline(aes(qqline(.stdresid))) +
+        xlab("Theoretical Quantiles")+ylab("Standardized Residuals") + 
+        ggtitle("Normal Q-Q") +
+        theme(legend.position = c(.15,.80), 
+              plot.title=element_text(face="bold",size=8),
+              axis.title=element_text(face="bold",size=8),
+              axis.text=element_text(face="bold",size=8))
+
+
+residPlot <- grid.arrange(plot1,plot2, ncol=2)
+
+```
+
+We also did not observe any single point that has any huge effect on the estimate of a regression coefficient. Refer to the appendix (Figure 6) for the DFBETAS values. 
+
+### **CONCLUSION**
+**Relationship between Transmission and MPG** - From model 2, we can see that am is not significantly associated with mpg with a p-value of 0.893. Hence, we conclude that there is no significant relationship between transmission and mpg. Furthermore, from model 3, we are able to account for 81.85% of the variation (based on Adjusted R Squared) in mpg with the predictors cyl and wt.
+
+**Interpreting the coefficients** - Based on model 3, holding all other variables constant, for every unit change wt, will result in -3.19 change in mpg. For every unit change in cyl, will result in -1.51 change in mpg. 
+
+**Statistical Inference** - At 95% confidence interval, and with a p-value of less than 0.05 for model 3, we reject the null hypothesis that the slope is zero. 
+
+***
+### **APPENDIX**
+
+**Figure 1 - Correlation Matrix** 
+```{r, echo=FALSE}
+round(cor(corPlotCars),2)
+```
+
+**Figure 2 - Model 1 Coefficients** 
+```{r, echo=FALSE}
+summary(model1)
+```
+
+**Figure 3 - Model 2 Coefficients** 
+```{r, echo=FALSE}
+summary(model2)
+```
+
+**Figure 4 - Model 3 Coefficients** 
+```{r, echo=FALSE}
+summary(model3)
+```
+
+**Figure 5 - Additional Diagnostics Plot**
+
+```{r, echo=FALSE, fig.width=6, fig.height=3, fig.align='center'}
+par(mfrow = c(1,2))
+plot(model3,3)
+plot(model3,5)
+```
+
+**Figure 6 - DFBETAS** 
+```{r, echo=FALSE}
+dfbetas(model3)
+```
+
+The rmd file is available here: [link]()
