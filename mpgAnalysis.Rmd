@@ -122,9 +122,9 @@ We also did not observe any single point that has any huge effect on the estimat
 ### **CONCLUSION**
 **Relationship between Transmission and MPG** - From model 2, we can see that am is not significantly associated with mpg with a p-value of 0.893. Hence, we conclude that there is no significant relationship between transmission and mpg. Furthermore, from model 3, we are able to account for 81.85% of the variation (based on Adjusted R Squared) in mpg with the predictors cyl and wt.
 
-**Interpreting the coefficients** - Based on model 3, holding all other variables constant, for every unit change wt, will result in -3.19 change in mpg. For every unit change in cyl, will result in -1.51 change in mpg. 
+**Interpreting the coefficients** - Based on model 3, holding all other variables constant, for every unit change wt, will result in -3.19 change in mpg and for every unit change in cyl, will result in -1.51 change in mpg. 
 
-**Statistical Inference** - At 95% confidence interval, and with a p-value of less than 0.05 for model 3, we reject the null hypothesis that the slope is zero. 
+**Statistical Inference** - At 95% confidence interval, and with F statistic of 70.91 and a p-value of less than 0.05 for model 3, we reject the null hypothesis that the slope is zero. 
 
 ***
 ### **APPENDIX**
@@ -162,4 +162,4 @@ plot(model3,5)
 dfbetas(model3)
 ```
 
-The rmd file is available here: [link]()
+The rmd file is available here: [link](https://github.com/junquant/regression)
